@@ -4,14 +4,28 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { Component } from "react";
+import { Component } from "react";
 import PropTypes from "prop-types";
 import { Grid, Container } from "semantic-ui-react";
 import { Differ, Viewer } from "json-diff-kit";
 
+const DEFAULT_DIFF = {};
+const DEFAULT_VIEWER_PROPS = {
+  indent: 4,
+  lineNumbers: true,
+  highlightInlineDiff: true,
+  inlineDiffOptions: {
+    mode: "word",
+    wordSeparator: " ",
+  },
+  hideUnchangedLines: true,
+  syntaxHighlight: false,
+  virtual: true,
+};
+
 export class RevisionsDiffViewer extends Component {
-  constructor(props) {
-    super(props);
+  constructor({ diff = DEFAULT_DIFF, viewerProps = DEFAULT_VIEWER_PROPS, ...props }) {
+    super({ diff, viewerProps, ...props });
     this.differ = new Differ({
       detectCircular: true,
       maxDepth: null,
@@ -58,20 +72,4 @@ export class RevisionsDiffViewer extends Component {
 RevisionsDiffViewer.propTypes = {
   diff: PropTypes.object,
   viewerProps: PropTypes.object,
-};
-
-RevisionsDiffViewer.defaultProps = {
-  diff: {},
-  viewerProps: {
-    indent: 4,
-    lineNumbers: true,
-    highlightInlineDiff: true,
-    inlineDiffOptions: {
-      mode: "word",
-      wordSeparator: " ",
-    },
-    hideUnchangedLines: true,
-    syntaxHighlight: false,
-    virtual: true,
-  },
 };

@@ -6,22 +6,22 @@
 
 import { PendingCommunitiesModal } from "./PendingCommunitiesModal/PendingCommunitiesModal";
 import { RecordCommunitySubmissionModal } from "./RecordCommunitySubmission/RecordCommunitySubmissionModal";
-import React, { Component } from "react";
+import { Component, createRef } from "react";
 import PropTypes from "prop-types";
 import { Dropdown, Icon } from "semantic-ui-react";
 import { i18next } from "@translations/invenio_app_rdm/i18next";
 import { SuccessIcon } from "@js/invenio_communities/members";
 
 export class CommunitiesManagementDropdown extends Component {
-  constructor(props) {
-    super(props);
+  constructor({ actionSucceed = undefined, ...props }) {
+    super({ actionSucceed, ...props });
     this.state = {
       submissionModalOpen: false,
       pendingRequestModalOpen: false,
       visibleSuccessAction: false,
       actionFeedback: "",
     };
-    this.dropdownRef = React.createRef();
+    this.dropdownRef = createRef();
   }
 
   focusDropdownRef = () => {
@@ -178,8 +178,4 @@ CommunitiesManagementDropdown.propTypes = {
   actionSucceed: PropTypes.func,
   searchConfig: PropTypes.object.isRequired,
   record: PropTypes.object.isRequired,
-};
-
-CommunitiesManagementDropdown.defaultProps = {
-  actionSucceed: undefined,
 };

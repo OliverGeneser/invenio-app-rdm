@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { Component } from "react";
+import { Component } from "react";
 import PropTypes from "prop-types";
 import { i18next } from "@translations/invenio_app_rdm/i18next";
 import { withCancel, http } from "react-invenio-forms";
@@ -22,8 +22,8 @@ import isEmpty from "lodash/isEmpty";
 import { buildUID } from "react-searchkit";
 
 export class RecordsList extends Component {
-  constructor(props) {
-    super(props);
+  constructor({ appName = "", ...props }) {
+    super({ appName, ...props });
 
     this.state = {
       data: { hits: [] },
@@ -139,11 +139,11 @@ RecordsList.propTypes = {
   appName: PropTypes.string,
 };
 
-RecordsList.defaultProps = {
-  appName: "",
-};
-
 export class RecordsListOverridable extends Component {
+  constructor({ appName = "", ...props }) {
+    super({ appName, ...props });
+  }
+
   render() {
     const { title, fetchUrl, appName } = this.props;
     return (
@@ -163,8 +163,4 @@ RecordsListOverridable.propTypes = {
   title: PropTypes.string.isRequired,
   fetchUrl: PropTypes.string.isRequired,
   appName: PropTypes.string,
-};
-
-RecordsListOverridable.defaultProps = {
-  appName: "",
 };

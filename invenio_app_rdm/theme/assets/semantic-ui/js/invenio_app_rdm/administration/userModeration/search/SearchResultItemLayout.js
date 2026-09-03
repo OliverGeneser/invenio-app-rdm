@@ -8,14 +8,26 @@ import { BoolFormatter } from "@js/invenio_administration";
 import { ModerationActions } from "../ModerationActions";
 import { UserActions } from "../../users/UserActions";
 import PropTypes from "prop-types";
-import React, { Component } from "react";
+import { Component } from "react";
 import { Table, Icon } from "semantic-ui-react";
 import { withState } from "react-searchkit";
 import { AdminUIRoutes } from "@js/invenio_administration/src/routes";
 import { UserListItemCompact } from "react-invenio-forms";
 import { i18next } from "@translations/invenio_app_rdm/i18next";
 
+const DEFAULT_ACTIONS = {};
+
 class SearchResultItemComponent extends Component {
+  constructor({
+    displayDelete = true,
+    displayEdit = true,
+    actions = DEFAULT_ACTIONS,
+    resourceHasActions = false,
+    ...props
+  }) {
+    super({ displayDelete, displayEdit, actions, resourceHasActions, ...props });
+  }
+
   refreshAfterAction = () => {
     const { updateQueryState, currentQueryState } = this.props;
     updateQueryState(currentQueryState);
@@ -136,13 +148,6 @@ SearchResultItemComponent.propTypes = {
   idKeyPath: PropTypes.string.isRequired,
   listUIEndpoint: PropTypes.string.isRequired,
   resourceHasActions: PropTypes.bool,
-};
-
-SearchResultItemComponent.defaultProps = {
-  displayDelete: true,
-  displayEdit: true,
-  actions: {},
-  resourceHasActions: false,
 };
 
 export const SearchResultItemLayout = withState(SearchResultItemComponent);

@@ -5,7 +5,7 @@
  */
 
 import isEmpty from "lodash/isEmpty";
-import React, { Component } from "react";
+import { Component } from "react";
 import PropTypes from "prop-types";
 import { Button, Icon, Dropdown, Modal } from "semantic-ui-react";
 import { ActionModal, NotificationContext } from "@js/invenio_administration";
@@ -18,8 +18,26 @@ import { UserModerationApi } from "./api";
 import UserBlockForm from "./UserBlockForm";
 
 export class UserActions extends Component {
-  constructor(props) {
-    super(props);
+  constructor({
+    displayBlock = false,
+    displaySuspend = false,
+    displayApprove = false,
+    displayRestore = false,
+    displayImpersonateUser = false,
+    displayQuota = false,
+    useDropdown = false,
+    ...props
+  }) {
+    super({
+      displayBlock,
+      displaySuspend,
+      displayApprove,
+      displayRestore,
+      displayImpersonateUser,
+      displayQuota,
+      useDropdown,
+      ...props,
+    });
     this.state = { loading: false, blockModalOpen: false };
   }
 
@@ -265,14 +283,4 @@ UserActions.propTypes = {
   displayImpersonateUser: PropTypes.bool,
   displayQuota: PropTypes.bool,
   useDropdown: PropTypes.bool,
-};
-
-UserActions.defaultProps = {
-  displayBlock: false,
-  displaySuspend: false,
-  displayApprove: false,
-  displayRestore: false,
-  displayImpersonateUser: false,
-  displayQuota: false,
-  useDropdown: false,
 };

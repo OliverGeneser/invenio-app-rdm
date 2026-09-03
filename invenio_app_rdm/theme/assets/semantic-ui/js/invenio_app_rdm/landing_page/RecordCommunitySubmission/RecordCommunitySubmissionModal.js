@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { Component } from "react";
+import { Component } from "react";
 import PropTypes from "prop-types";
 import { i18next } from "@translations/invenio_app_rdm/i18next";
 import { Message } from "semantic-ui-react";
@@ -14,8 +14,8 @@ import {
 } from "@js/invenio_rdm_records";
 
 export class RecordCommunitySubmissionModal extends Component {
-  constructor(props) {
-    super(props);
+  constructor({ modalOpen = false, ...props }) {
+    super({ modalOpen, ...props });
     this.state = {
       confirmationModalOpen: false,
       selectedCommunity: null,
@@ -169,8 +169,4 @@ RecordCommunitySubmissionModal.propTypes = {
   recordUserCommunitySearchConfig: PropTypes.string.isRequired,
   handleClose: PropTypes.func.isRequired,
   record: PropTypes.object.isRequired,
-};
-
-RecordCommunitySubmissionModal.defaultProps = {
-  modalOpen: false,
 };

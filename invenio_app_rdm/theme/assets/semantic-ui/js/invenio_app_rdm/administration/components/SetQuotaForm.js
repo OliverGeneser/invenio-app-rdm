@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { Component } from "react";
+import { Component } from "react";
 import PropTypes from "prop-types";
 import { i18next } from "@translations/invenio_app_rdm/i18next";
 import { Formik } from "formik";
@@ -19,8 +19,8 @@ import { NotificationContext } from "@js/invenio_administration";
 import * as Yup from "yup";
 
 export class SetQuotaForm extends Component {
-  constructor(props) {
-    super(props);
+  constructor({ setQuotaInBytes = false, ...props }) {
+    super({ setQuotaInBytes, ...props });
     this.state = {
       loading: false,
       error: undefined,
@@ -186,8 +186,4 @@ SetQuotaForm.propTypes = {
   actionCancelCallback: PropTypes.func.isRequired,
   apiUrl: PropTypes.string.isRequired,
   setQuotaInBytes: PropTypes.bool,
-};
-
-SetQuotaForm.defaultProps = {
-  setQuotaInBytes: false,
 };

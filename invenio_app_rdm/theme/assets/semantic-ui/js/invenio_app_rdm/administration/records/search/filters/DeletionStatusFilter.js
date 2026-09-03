@@ -3,15 +3,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { i18next } from "@translations/invenio_requests/i18next";
+import { i18next } from "@translations/invenio_app_rdm/i18next";
 import PropTypes from "prop-types";
-import React, { Component } from "react";
+import { Component } from "react";
 import { withState } from "react-searchkit";
 import { Button } from "semantic-ui-react";
 
 class DeletionStatusFilterComponent extends Component {
-  constructor(props) {
-    super(props);
+  constructor({ keepFiltersOnUpdate = false, ...props }) {
+    super({ keepFiltersOnUpdate, ...props });
 
     this.state = {
       selected: "P",
@@ -109,10 +109,6 @@ DeletionStatusFilterComponent.propTypes = {
   updateQueryState: PropTypes.func.isRequired,
   currentQueryState: PropTypes.object.isRequired,
   keepFiltersOnUpdate: PropTypes.bool,
-};
-
-DeletionStatusFilterComponent.defaultProps = {
-  keepFiltersOnUpdate: false,
 };
 
 export const DeletionStatusFilter = withState(DeletionStatusFilterComponent);

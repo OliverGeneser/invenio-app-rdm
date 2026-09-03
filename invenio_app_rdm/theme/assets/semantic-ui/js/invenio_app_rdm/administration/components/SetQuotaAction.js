@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { Component } from "react";
+import { Component } from "react";
 import PropTypes from "prop-types";
 import { Button, Modal, Icon, Checkbox } from "semantic-ui-react";
 import { ActionModal } from "@js/invenio_administration";
@@ -11,8 +11,8 @@ import { SetQuotaForm } from "./SetQuotaForm";
 import { i18next } from "@translations/invenio_app_rdm/i18next";
 
 export class SetQuotaAction extends Component {
-  constructor(props) {
-    super(props);
+  constructor({ isRecord = false, ...props }) {
+    super({ isRecord, ...props });
     this.state = {
       modalOpen: false,
       setQuotaInBytes: false,
@@ -99,8 +99,4 @@ SetQuotaAction.propTypes = {
   apiUrl: PropTypes.string.isRequired,
   headerText: PropTypes.string.isRequired,
   isRecord: PropTypes.bool,
-};
-
-SetQuotaAction.defaultProps = {
-  isRecord: false,
 };

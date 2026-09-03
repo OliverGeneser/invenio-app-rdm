@@ -10,7 +10,7 @@ import { UserActions } from "../../users/UserActions";
 import { RecordActions } from "../RecordActions";
 import _truncate from "lodash/truncate";
 import PropTypes from "prop-types";
-import React, { Component } from "react";
+import { Component } from "react";
 import { Popup, Table, Button } from "semantic-ui-react";
 import { withState } from "react-searchkit";
 import { AdminUIRoutes } from "@js/invenio_administration/src/routes";
@@ -18,6 +18,10 @@ import { humanReadableBytes, toRelativeTime } from "react-invenio-forms";
 import { i18next } from "@translations/invenio_app_rdm/i18next";
 
 class SearchResultItemComponent extends Component {
+  constructor({ displayEdit = false, displayDelete = false, ...props }) {
+    super({ displayEdit, displayDelete, ...props });
+  }
+
   refreshAfterAction = () => {
     const { updateQueryState, currentQueryState } = this.props;
     updateQueryState(currentQueryState);
@@ -51,7 +55,8 @@ class SearchResultItemComponent extends Component {
           <BoolFormatter
             value={result.access.record === "public"}
             color="green"
-            icon="lock unlocked"
+            icon="unlock"
+            tooltip={i18next.t("Public")}
           />
           <BoolFormatter
             value={
@@ -60,6 +65,7 @@ class SearchResultItemComponent extends Component {
             }
             color="red"
             icon="lock"
+            tooltip={i18next.t("Restricted")}
           />
           <a target="_blank" rel="noreferrer noopener" href={result.links.self_html}>
             {_truncate(result.metadata.title || i18next.t("Empty draft title"), {
@@ -162,7 +168,5 @@ SearchResultItemComponent.propTypes = {
   displayDelete: PropTypes.bool,
   actions: PropTypes.object.isRequired,
 };
-
-SearchResultItemComponent.defaultProps = { displayEdit: false, displayDelete: false };
 
 export const SearchResultItemLayout = withState(SearchResultItemComponent);

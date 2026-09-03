@@ -7,7 +7,7 @@
 import { i18next } from "@translations/invenio_app_rdm/i18next";
 import _isEmpty from "lodash/isEmpty";
 import PropTypes from "prop-types";
-import React, { Component } from "react";
+import { Component } from "react";
 import { Image } from "react-invenio-forms";
 import {
   Grid,
@@ -20,7 +20,19 @@ import {
   Icon,
 } from "semantic-ui-react";
 
+const DEFAULT_RECORD_REQUESTS = {};
+
 export class RecordCommunitiesList extends Component {
+  constructor({
+    communities = undefined,
+    loading = false,
+    error = "",
+    recordRequests = DEFAULT_RECORD_REQUESTS,
+    ...props
+  }) {
+    super({ communities, loading, error, recordRequests, ...props });
+  }
+
   render() {
     const { communities, loading, error, maxDisplayedCommunities, recordRequests } =
       this.props;
@@ -139,11 +151,4 @@ RecordCommunitiesList.propTypes = {
   loading: PropTypes.bool,
   error: PropTypes.string,
   recordRequests: PropTypes.object,
-};
-
-RecordCommunitiesList.defaultProps = {
-  communities: undefined,
-  loading: false,
-  error: "",
-  recordRequests: {},
 };

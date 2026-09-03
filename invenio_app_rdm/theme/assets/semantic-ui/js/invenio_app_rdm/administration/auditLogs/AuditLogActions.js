@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { Component } from "react";
+import { Component } from "react";
 import PropTypes from "prop-types";
 import { Button, Modal, Icon } from "semantic-ui-react";
 import { ActionModal } from "@js/invenio_administration";
@@ -13,8 +13,8 @@ import { ViewRecentChanges } from "./ViewRecentChanges";
 import { ViewJson } from "./ViewJson";
 
 export class AuditLogActions extends Component {
-  constructor(props) {
-    super(props);
+  constructor({ Element = Button, actions = undefined, ...props }) {
+    super({ Element, actions, ...props });
     this.state = {
       modalOpen: false,
       modalHeader: undefined,
@@ -125,9 +125,4 @@ AuditLogActions.propTypes = {
     order: PropTypes.number.isRequired,
   }),
   Element: PropTypes.node,
-};
-
-AuditLogActions.defaultProps = {
-  Element: Button,
-  actions: undefined,
 };

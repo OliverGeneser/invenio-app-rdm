@@ -6,12 +6,16 @@
 import { SearchAppResultsPane } from "@js/invenio_search_ui/components";
 import { SearchFacets } from "@js/invenio_administration";
 import PropTypes from "prop-types";
-import React, { Component } from "react";
+import { Component } from "react";
 import { UserStatusFilter } from "./filters";
 import { SearchBar, Sort } from "react-searchkit";
 import { Grid } from "semantic-ui-react";
 
 export class UserSearchLayout extends Component {
+  constructor({ appName = "", ...props }) {
+    super({ appName, ...props });
+  }
+
   render() {
     const { config, appName } = this.props;
     return (
@@ -71,8 +75,4 @@ export class UserSearchLayout extends Component {
 UserSearchLayout.propTypes = {
   config: PropTypes.object.isRequired,
   appName: PropTypes.string,
-};
-
-UserSearchLayout.defaultProps = {
-  appName: "",
 };

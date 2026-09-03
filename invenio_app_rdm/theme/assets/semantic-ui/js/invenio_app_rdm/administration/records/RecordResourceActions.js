@@ -5,7 +5,7 @@
 
 import TombstoneForm from "./TombstoneForm";
 import { CompareRevisions } from "./CompareRevisions";
-import React, { Component } from "react";
+import { Component } from "react";
 import PropTypes from "prop-types";
 import { Button, Modal, Icon } from "semantic-ui-react";
 import { ActionModal } from "@js/invenio_administration";
@@ -14,8 +14,8 @@ import { RestoreConfirmation } from "./RestoreConfirmation";
 import { i18next } from "@translations/invenio_app_rdm/i18next";
 
 export class RecordResourceActions extends Component {
-  constructor(props) {
-    super(props);
+  constructor({ Element = Button, ...props }) {
+    super({ Element, ...props });
     this.state = {
       modalOpen: false,
       modalHeader: undefined,
@@ -24,7 +24,7 @@ export class RecordResourceActions extends Component {
     };
   }
 
-  onModalTriggerClick = (e, { payloadSchema, dataName, dataActionKey }) => {
+  onModalTriggerClick = (payloadSchema, dataName, dataActionKey) => {
     const { resource } = this.props;
 
     if (dataActionKey === "compare") {
@@ -103,11 +103,13 @@ export class RecordResourceActions extends Component {
             return (
               <Element
                 key={actionKey}
-                onClick={this.onModalTriggerClick}
-                payloadSchema={actionConfig.payload_schema}
-                dataName={actionConfig.text}
-                dataActionKey={actionKey}
-                icon={icon}
+                onClick={() =>
+                  this.onModalTriggerClick(
+                    actionConfig.payload_schema,
+                    actionConfig.text,
+                    actionKey
+                  )
+                }
                 fluid
                 basic
                 labelPosition="left"
@@ -122,11 +124,13 @@ export class RecordResourceActions extends Component {
             return (
               <Element
                 key={actionKey}
-                onClick={this.onModalTriggerClick}
-                payloadSchema={actionConfig.payload_schema}
-                dataName={actionConfig.text}
-                dataActionKey={actionKey}
-                icon={icon}
+                onClick={() =>
+                  this.onModalTriggerClick(
+                    actionConfig.payload_schema,
+                    actionConfig.text,
+                    actionKey
+                  )
+                }
                 fluid
                 basic
                 labelPosition="left"
@@ -141,11 +145,13 @@ export class RecordResourceActions extends Component {
             return (
               <Element
                 key={actionKey}
-                onClick={this.onModalTriggerClick}
-                payloadSchema={actionConfig.payload_schema}
-                dataName={actionConfig.text}
-                dataActionKey={actionKey}
-                icon={icon}
+                onClick={() =>
+                  this.onModalTriggerClick(
+                    actionConfig.payload_schema,
+                    actionConfig.text,
+                    actionKey
+                  )
+                }
                 fluid
                 labelPosition="left"
               >
@@ -168,15 +174,12 @@ export class RecordResourceActions extends Component {
 RecordResourceActions.propTypes = {
   resource: PropTypes.object.isRequired,
   successCallback: PropTypes.func.isRequired,
-  actions: PropTypes.shape({
-    text: PropTypes.string.isRequired,
-    payload_schema: PropTypes.object.isRequired,
-    order: PropTypes.number.isRequired,
-  }),
-  Element: PropTypes.node,
-};
-
-RecordResourceActions.defaultProps = {
-  Element: Button,
-  actions: undefined,
+  actions: PropTypes.objectOf(
+    PropTypes.shape({
+      text: PropTypes.string.isRequired,
+      payload_schema: PropTypes.object,
+      order: PropTypes.number.isRequired,
+    })
+  ).isRequired,
+  Element: PropTypes.elementType,
 };
