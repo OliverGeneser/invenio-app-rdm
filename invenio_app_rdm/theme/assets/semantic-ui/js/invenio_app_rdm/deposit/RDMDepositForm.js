@@ -51,10 +51,10 @@ import { FileModificationUntil } from "../components/FileModificationUntil";
 import { DepositAccordionField, isCustomSectionActive } from "./DepositAccordionField";
 import {
   SuggestionsProvider,
+  SuggestionsOutlet,
   SuggestionsButton,
-  FieldSuggestion,
-  isOrchaEnabled,
-} from "./orcha";
+  hasSuggestionBackend,
+} from "./suggestions";
 
 const DEFAULT_RECORD_DELETION = {};
 const DEFAULT_FILE_MODIFICATION = {};
@@ -155,10 +155,10 @@ export class RDMDepositForm extends Component {
       hideCommunitySelection: this.hide_community_selection,
     };
 
-    const orchaEnabled = isOrchaEnabled(this.config);
+    const suggestionsEnabled = hasSuggestionBackend();
 
     const fileActions =
-      !record.is_published && orchaEnabled
+      !record.is_published && suggestionsEnabled
         ? (file) => {
             const filename = file?.name?.toLowerCase() ?? "";
             if (file?.mimetype !== "application/pdf" && !filename.endsWith(".pdf"))
@@ -176,7 +176,7 @@ export class RDMDepositForm extends Component {
           }
         : undefined;
 
-    const SuggestionsWrapper = orchaEnabled ? SuggestionsProvider : Fragment;
+    const SuggestionsWrapper = suggestionsEnabled ? SuggestionsProvider : Fragment;
 
     return (
       <SuggestionsWrapper>
@@ -196,6 +196,7 @@ export class RDMDepositForm extends Component {
             errors={record.errors}
             recordSerializer={null}
           >
+            <SuggestionsOutlet />
             <Overridable
               id="InvenioAppRdm.Deposit.FormFeedback.container"
               labels={this.config.custom_fields.error_labels}
@@ -332,8 +333,6 @@ export class RDMDepositForm extends Component {
                           ))}
                         </Fragment>
                       </Overridable>
-                      {orchaEnabled && <FieldSuggestion field="doi" />}
-
                       <Overridable
                         id="InvenioAppRdm.Deposit.ResourceTypeField.container"
                         vocabularies={this.vocabularies}
@@ -360,7 +359,6 @@ export class RDMDepositForm extends Component {
                           required
                         />
                       </Overridable>
-                      {orchaEnabled && <FieldSuggestion field="title" />}
 
                       <Overridable
                         id="InvenioAppRdm.Deposit.PublicationDateField.container"
@@ -372,7 +370,6 @@ export class RDMDepositForm extends Component {
                           fieldPath="metadata.publication_date"
                         />
                       </Overridable>
-                      {orchaEnabled && <FieldSuggestion field="publication_date" />}
 
                       <Overridable
                         id="InvenioAppRdm.Deposit.CreatorsField.container"
@@ -394,7 +391,6 @@ export class RDMDepositForm extends Component {
                           required
                         />
                       </Overridable>
-                      {orchaEnabled && <FieldSuggestion field="creators" />}
 
                       <Overridable
                         id="InvenioAppRdm.Deposit.DescriptionsField.container"
@@ -408,7 +404,6 @@ export class RDMDepositForm extends Component {
                           recordUI={_get(record, "ui", null)}
                         />
                       </Overridable>
-                      {orchaEnabled && <FieldSuggestion field="description" />}
 
                       <Overridable
                         id="InvenioAppRdm.Deposit.LicenseField.container"
@@ -444,7 +439,6 @@ export class RDMDepositForm extends Component {
                           })}
                         />
                       </Overridable>
-                      {orchaEnabled && <FieldSuggestion field="license" />}
                       <Overridable
                         id="InvenioAppRdm.Deposit.CopyrightsField.container"
                         fieldPath="metadata.copyright"
@@ -452,7 +446,6 @@ export class RDMDepositForm extends Component {
                       >
                         <CopyrightsField fieldPath="metadata.copyright" />
                       </Overridable>
-                      {orchaEnabled && <FieldSuggestion field="copyright" />}
                       <Overridable
                         id="InvenioAppRdm.Deposit.AccordionFieldBasicInformation.extra"
                         {...overridableBlocksCommonProps}
@@ -673,7 +666,6 @@ export class RDMDepositForm extends Component {
                           }}
                         />
                       </Overridable>
-                      {orchaEnabled && <FieldSuggestion field="funding" />}
                       <Overridable
                         id="InvenioAppRdm.Deposit.AccordionFieldFunding.extra"
                         {...overridableBlocksCommonProps}

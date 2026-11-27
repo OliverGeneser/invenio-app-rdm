@@ -2,6 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { i18next } from "@translations/invenio_app_rdm/i18next";
 import { SuggestionsContext } from "./Context";
+import {
+  getSuggestionBackend,
+  getSuggester,
+  getValueAt,
+  resolveEndpoint,
+} from "../../suggestions/registry";
+import { setRichEditorContent } from "./dom";
 
 const STATUS = {
   IDLE: "idle",
@@ -15,95 +22,9 @@ const SUGGESTION_PENDING = "pending";
 const SUGGESTION_APPLIED = "applied";
 const SUGGESTION_DENIED = "denied";
 
-const LIST_FIELD_PATHS = {
-  funding: "metadata.funding",
-  license: "metadata.rights",
-};
-
 const getDraftId = (record) => {
   const id = record?.id;
   return id && id !== "null" && id !== "undefined" ? id : null;
-};
-
-const creatorField = (creator) => ({
-  person_or_org: {
-    type: "personal",
-    family_name: creator.name.split(", ")[0] ?? creator.name,
-    given_name: creator.name.split(", ")[1] ?? "",
-    identifiers: creator.orcid ? [{ identifier: creator.orcid, scheme: "orcid" }] : [],
-  },
-  affiliations: creator.affiliation ? [{ name: creator.affiliation }] : [],
-  role: "",
-});
-
-const getRichEditor = (fieldPath) => {
-  if (typeof document === "undefined" || typeof window === "undefined") return null;
-
-  const fieldElement = document.getElementById(fieldPath);
-  if (!fieldElement) return null;
-
-  const editorId = fieldElement.querySelector("textarea")?.id;
-  const editorManager = window.hugerte;
-  return editorId && typeof editorManager?.get === "function"
-    ? editorManager.get(editorId)
-    : null;
-};
-
-const setRichEditorContent = (fieldPath, value) => {
-  const editor = getRichEditor(fieldPath);
-  if (!editor) return;
-
-  const updateEditor = () => {
-    editor.setContent(value, { no_events: true });
-    editor.save?.();
-  };
-
-  if (editor.initialized === false && typeof editor.on === "function") {
-    editor.on("init", updateEditor);
-    return;
-  }
-
-  updateEditor();
-};
-
-const applyToFormik = (formik, field, value) => {
-  switch (field) {
-    case "creators":
-      formik.setFieldValue("metadata.creators", value.map(creatorField));
-      break;
-    case "doi":
-      formik.setFieldValue("pids.doi", {
-        identifier: value,
-        provider: "external",
-      });
-      break;
-    case "description": {
-      const description = `<p>${value}</p>`;
-      formik.setFieldValue("metadata.description", description);
-      setRichEditorContent("metadata.description", description);
-      break;
-    }
-    case "license":
-      formik.setFieldValue("metadata.rights", value);
-      break;
-    case "funding":
-      formik.setFieldValue("metadata.funding", value);
-      break;
-    default:
-      formik.setFieldValue(`metadata.${field}`, value);
-  }
-};
-
-const appendCreatorsToFormik = (formik, creators) => {
-  const currentCreators = formik.values?.metadata?.creators ?? [];
-  formik.setFieldValue("metadata.creators", [
-    ...currentCreators,
-    ...creators.map(creatorField),
-  ]);
-};
-
-const appendCreatorToFormik = (formik, creator) => {
-  appendCreatorsToFormik(formik, [creator]);
 };
 
 export const SuggestionsProvider = ({ children = null }) => {
@@ -144,20 +65,18 @@ export const SuggestionsProvider = ({ children = null }) => {
     }
   };
 
-  const updateSuggestionStatus = (field, status) => {
+  const updateSuggestionStatus = (id, status) => {
     setState((prev) => ({
       ...prev,
-      suggestions: prev.suggestions.map((s) =>
-        s.field === field ? { ...s, status } : s
-      ),
+      suggestions: prev.suggestions.map((s) => (s.id === id ? { ...s, status } : s)),
     }));
   };
 
-  const removeSuggestedItem = (field, index, emptyStatus) => {
+  const removeSuggestedItem = (id, index, emptyStatus) => {
     setState((prev) => ({
       ...prev,
       suggestions: prev.suggestions.map((s) => {
-        if (s.field !== field || !Array.isArray(s.value)) return s;
+        if (s.id !== id || !Array.isArray(s.value)) return s;
 
         const value = s.value.filter((_, currentIndex) => currentIndex !== index);
         return {
@@ -185,6 +104,9 @@ export const SuggestionsProvider = ({ children = null }) => {
     closeEventSource();
     clearStreamTimeout();
 
+    const backend = getSuggestionBackend();
+    if (!backend) return;
+
     setState((prev) => ({
       ...prev,
       status: STATUS.TRIGGERING,
@@ -199,7 +121,7 @@ export const SuggestionsProvider = ({ children = null }) => {
       requestOptions.body = JSON.stringify({ fileKey });
     }
 
-    fetch(`/uploads/${encodeURIComponent(draftId)}/orcha`, requestOptions)
+    fetch(resolveEndpoint(backend.trigger, draftId, fileKey), requestOptions)
       .then((res) => {
         if (!res.ok) {
           return res.text().then((body) => {
@@ -260,8 +182,9 @@ export const SuggestionsProvider = ({ children = null }) => {
               setState((prev) => ({
                 ...prev,
                 status: STATUS.SUCCESS,
-                suggestions: suggestions.map((s) => ({
+                suggestions: suggestions.map((s, index) => ({
                   ...s,
+                  id: `${s.field}:${index}`,
                   status: SUGGESTION_PENDING,
                 })),
               }));
@@ -303,73 +226,62 @@ export const SuggestionsProvider = ({ children = null }) => {
       });
   };
 
-  const apply = (formik, field, valueIndex = null) => {
-    const suggestion = state.suggestions.find((s) => s.field === field);
-    if (!suggestion) return;
+  const applyValue = (formik, entry, rawValue) => {
+    const value = Array.isArray(rawValue)
+      ? entry.serializeItem
+        ? rawValue.map(entry.serializeItem)
+        : rawValue
+      : entry.serialize
+      ? entry.serialize(rawValue)
+      : rawValue;
+    const current = getValueAt(formik.values, entry.fieldPath);
+    const next = entry.apply(current, value);
+    formik.setFieldValue(entry.fieldPath, next);
+    setRichEditorContent(entry.fieldPath, next);
+  };
 
-    if (field === "creators") {
+  const apply = (formik, id, valueIndex = null) => {
+    const suggestion = state.suggestions.find((s) => s.id === id);
+    const entry = suggestion && getSuggester(suggestion.field);
+    if (!suggestion || !entry) return;
+
+    if (Array.isArray(suggestion.value) && entry.strategyName === "append") {
       if (valueIndex === null) {
-        const creators = Array.isArray(suggestion.value) ? suggestion.value : [];
-        if (creators.length === 0) return;
-
-        appendCreatorsToFormik(formik, creators);
-        updateSuggestionStatus(field, SUGGESTION_APPLIED);
+        if (suggestion.value.length === 0) return;
+        applyValue(formik, entry, suggestion.value);
+        updateSuggestionStatus(id, SUGGESTION_APPLIED);
         return;
       }
 
-      const creator = Array.isArray(suggestion.value)
-        ? suggestion.value[valueIndex]
-        : null;
-      if (!creator) return;
-
-      appendCreatorToFormik(formik, creator);
-      removeSuggestedItem("creators", valueIndex, SUGGESTION_APPLIED);
+      const item = suggestion.value[valueIndex];
+      if (!item) return;
+      applyValue(formik, entry, [item]);
+      removeSuggestedItem(id, valueIndex, SUGGESTION_APPLIED);
       return;
     }
 
-    if (field in LIST_FIELD_PATHS) {
-      const entries = Array.isArray(suggestion.value) ? suggestion.value : [];
-      const entry = valueIndex !== null ? entries[valueIndex] ?? null : null;
-      if (!entry) return;
-      const path = LIST_FIELD_PATHS[field];
-      const [ns, key] = path.split(".");
-      const current = formik.values?.[ns]?.[key] ?? [];
-      formik.setFieldValue(path, [...current, entry]);
-      removeSuggestedItem(field, valueIndex, SUGGESTION_APPLIED);
-      return;
-    }
-
-    applyToFormik(formik, field, suggestion.value);
-    updateSuggestionStatus(field, SUGGESTION_APPLIED);
+    applyValue(formik, entry, suggestion.value);
+    updateSuggestionStatus(id, SUGGESTION_APPLIED);
   };
 
-  const deny = (field, valueIndex = null) => {
-    const suggestion = state.suggestions.find((s) => s.field === field);
+  const deny = (id, valueIndex = null) => {
+    const suggestion = state.suggestions.find((s) => s.id === id);
     if (!suggestion) return;
 
-    if (field === "creators") {
-      const creator = Array.isArray(suggestion.value)
-        ? suggestion.value[valueIndex]
-        : null;
-      if (!creator) return;
-
-      removeSuggestedItem("creators", valueIndex, SUGGESTION_DENIED);
+    if (Array.isArray(suggestion.value) && valueIndex !== null) {
+      removeSuggestedItem(id, valueIndex, SUGGESTION_DENIED);
       return;
     }
 
-    if (field === "funding" || field === "license") {
-      removeSuggestedItem(field, valueIndex, SUGGESTION_DENIED);
-      return;
-    }
-
-    updateSuggestionStatus(field, SUGGESTION_DENIED);
+    updateSuggestionStatus(id, SUGGESTION_DENIED);
   };
 
   const sendFeedback = (field, rating, comment = null) => {
     const { workflowId, recordId } = state;
-    if (!workflowId || !recordId) return;
+    const backend = getSuggestionBackend();
+    if (!backend?.feedback || !workflowId || !recordId) return;
 
-    fetch(`/uploads/${encodeURIComponent(recordId)}/orcha/feedback`, {
+    fetch(resolveEndpoint(backend.feedback, recordId), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -387,10 +299,6 @@ export const SuggestionsProvider = ({ children = null }) => {
     setState((prev) => ({ ...prev, error: null }));
   };
 
-  const getSuggestion = (field) => {
-    return state.suggestions.find((s) => s.field === field) ?? null;
-  };
-
   const { status, error, activeFileKey } = state;
   const value = {
     status,
@@ -403,7 +311,6 @@ export const SuggestionsProvider = ({ children = null }) => {
     apply,
     deny,
     sendFeedback,
-    getSuggestion,
     dismissError,
   };
 

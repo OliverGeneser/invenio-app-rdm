@@ -4,7 +4,7 @@ import { connect } from "react-redux";
 import { connect as connectFormik } from "formik";
 import { Button, Message } from "semantic-ui-react";
 import { useSuggestions } from "./Context";
-import { isSuggestionExactMatch } from "./utils";
+import { getSuggester, getValueAt } from "../../suggestions/registry";
 import { i18next } from "@translations/invenio_app_rdm/i18next";
 
 const getDraftId = (record) => {
@@ -12,7 +12,12 @@ const getDraftId = (record) => {
   return id && id !== "null" && id !== "undefined" ? id : null;
 };
 
-export const SuggestionsButtonComponent = ({ record, currentRecord, file, formik }) => {
+export const SuggestionsButtonComponent = ({
+  record,
+  currentRecord = null,
+  file = null,
+  formik = null,
+}) => {
   const suggestions = useSuggestions();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const extractedCountRef = useRef(null);
@@ -51,11 +56,20 @@ export const SuggestionsButtonComponent = ({ record, currentRecord, file, formik
   const showError = error && isCurrentFile;
 
   if (status === "success" && extractedCountRef.current?.workflowId !== workflowId) {
+    const isExactMatch = (s) => {
+      const entry = getSuggester(s?.field);
+      if (!entry) return false;
+      if (entry.match) return entry.match(s.value, formik?.values);
+      const current = getValueAt(formik?.values, entry.fieldPath);
+      return (
+        typeof current === "string" &&
+        typeof s.value === "string" &&
+        current.trim() === s.value.trim()
+      );
+    };
     extractedCountRef.current = {
       workflowId,
-      count: (extracted ?? []).filter(
-        (s) => !isSuggestionExactMatch(s.field, s, formik?.values)
-      ).length,
+      count: (extracted ?? []).filter((s) => !isExactMatch(s)).length,
     };
   }
   const extractedCount = extractedCountRef.current?.count ?? 0;
@@ -72,7 +86,7 @@ export const SuggestionsButtonComponent = ({ record, currentRecord, file, formik
   }
 
   return (
-    <div className="orcha-suggestions-button">
+    <div className="suggestions-button">
       <Button
         type="button"
         primary
@@ -84,7 +98,7 @@ export const SuggestionsButtonComponent = ({ record, currentRecord, file, formik
         onClick={() => trigger(draftRecord, fileKey)}
       />
       {showSuggestionsCount && (
-        <span className="orcha-suggestions-count ml-5">
+        <span className="suggestions-count ml-5">
           {i18next.t("Extracted {{count}} suggestions", {
             count: extractedCount,
           })}
@@ -106,12 +120,6 @@ SuggestionsButtonComponent.propTypes = {
     name: PropTypes.string,
   }),
   formik: PropTypes.object,
-};
-
-SuggestionsButtonComponent.defaultProps = {
-  currentRecord: null,
-  file: null,
-  formik: null,
 };
 
 const mapStateToProps = (state) => ({
